@@ -21,7 +21,7 @@ def get_gqs_comp(tn):
     gqs_comp = tn.read_until(']'.encode('ascii')).decode('ascii')
     gqs_comp = gqs_comp.split('     ')[-1]
     gqs_comp = gqs_comp.split('\x1b')[0]
-    return gqs_comp
+    return int(gqs_comp)
 
 def gquest(level, tn):
     tn.read_very_eager()
@@ -30,8 +30,13 @@ def gquest(level, tn):
     # gq_list = tn.read_until('] >'.encode('ascii')).decode('ascii').split('\x1b')
     gq_list = tn.read_until('] >'.encode('ascii')).decode('ascii').split('\x1b')
     gq_list = [item for item in gq_list if '***' not in item and '-----' not in item and 'Type' not in item][0]
-    gq_list = gq_list.split('\n\r')
-    gq_list = [item for item in gq_list if len(item) > 6 and ('[' not in item or '] >' not in item)]
+    if type(gq_list) == list:
+        gq_list = [item.split('\n\r\n\r')[0] for item in gq_list]
+        gq_list = [item.split('m\n\r')[-1] for item in gq_list]
+        print('is-list')
+    else:
+        gq_list = gq_list.split('\n\r')
+        gq_list = [item for item in gq_list if len(item) > 6 and ('[' not in item or '] >' not in item)]
     print(gq_list)
     if len(gq_list) > 1:
         for x in range(0,len(gq_list)):
@@ -61,7 +66,7 @@ def telnet_waiting():
     password = credentials['password']
     tn = telnetlib.Telnet('aardwolf.org', 23, 15)
     time.sleep(1)
-    print(tn.read_very_eager())
+    tn.read_very_eager()
     tn.write((username + '\n' + password + '\n\n').encode('ascii'))
     time.sleep(1)
     tn.read_very_eager()
