@@ -2,6 +2,7 @@ import discord
 import telnetlib
 import time
 import asyncio
+import traceback
 from config import credentials
 from discord_webhook import DiscordWebhook
 
@@ -102,8 +103,12 @@ async def telnet_waiting():
             await asyncio.sleep(60)
         tn.close()
         webhook.execute()
-    except:
+    except Exception as e:
         running = False
+        if str(e) != 'telnet connection closed':
+            error_webhook = DiscordWebhook(url=url, content=str(e) +'/n/n'+ traceback.format_exc())
+            error_webhook.execute()
+            print(e)
 
 intents = discord.Intents.default()
 intents.message_content = True
