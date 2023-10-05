@@ -1,6 +1,7 @@
 import discord
 import telnetlib
 import time
+import asyncio
 from config import credentials
 from discord_webhook import DiscordWebhook
 
@@ -60,7 +61,7 @@ def gquest(level, tn):
     else:
         return 0, 0, 0
 
-def telnet_waiting():
+async def telnet_waiting():
     webhook = DiscordWebhook(url=url, content="You can now quest again!")
     username = credentials['username']
     password = credentials['password']
@@ -96,19 +97,24 @@ def telnet_waiting():
             gquest_list.append(gquest_value)
             gq_webhoook = DiscordWebhook(url=url, content=f"GQuest {gquest_value} is available for your level!")
             gq_webhoook.execute()
-        time.sleep(60)
+        await asyncio.sleep(60)
     tn.close()
     webhook.execute()
 
-class MyClient(discord.Client):
-    async def on_ready(self):
-        print('Logged on as {0}!'.format(self.user))
+intents = discord.Intents.default()
+intents.message_content = True
 
-    async def on_message(self, message):
-        if message.channel.name == 'aardwolf-notifications' and message.author.name == 'floppybiscuits' and message.content == 'quest':
+client = discord.Client(intents=intents)
+
+@client.event
+async def on_ready():
+    print(f'We have logged in as {client.user}')
+
+@client.event
+async def on_message(message):
+    if message.channel.name == 'aardwolf-notifications' and message.author.name == 'floppybiscuits' and message.content.strip().upper() == 'QUEST':
             await message.channel.send('Starting Quest Idling Script')
-            telnet_waiting()
+            await telnet_waiting()
 
 if __name__ == '__main__':
-    client = MyClient()
     client.run(api_key)
