@@ -6,8 +6,11 @@ Requires you to both setup a message webhook for the Discord channel you're want
 
 # Requires following environmental variables add these to a credential file
 AARD_USER - Aardwolf username
+
 AARD_PASS - Aardwolf password
+
 DISCORD_API_KEY - API Key for your chatbot
+
 DISCORD_WEBHOOK - Webhook for same channel
 
 1. docker build -t image-name .
