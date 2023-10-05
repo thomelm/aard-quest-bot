@@ -62,49 +62,55 @@ def gquest(level, tn):
         return 0, 0, 0
 
 async def telnet_waiting():
-    webhook = DiscordWebhook(url=url, content="You can now quest again!")
-    username = credentials['username']
-    password = credentials['password']
-    tn = telnetlib.Telnet('aardwolf.org', 23, 15)
-    time.sleep(1)
-    tn.read_very_eager()
-    tn.write((username + '\n' + password + '\n\n').encode('ascii'))
-    time.sleep(1)
-    tn.read_very_eager()
-    tn.write('\n'.encode('ascii'))
-    time.sleep(1)
-    x = tn.read_until('qt'.encode('ascii')).decode('ascii').split()[-1][0]
-    qt = x[-1][0]  # x[3][0]
-    time.sleep(1)
-    level = get_level(tn)
-    gquest_wins = get_gqs_comp(tn)
-    gquest_list = []
-    while True:
+    global running
+    try:
+        webhook = DiscordWebhook(url=url, content="You can now quest again!")
+        username = credentials['username']
+        password = credentials['password']
+        tn = telnetlib.Telnet('aardwolf.org', 23, 15)
+        time.sleep(1)
+        tn.read_very_eager()
+        tn.write((username + '\n' + password + '\n\n').encode('ascii'))
+        time.sleep(1)
         tn.read_very_eager()
         tn.write('\n'.encode('ascii'))
-        time.sleep(0.2)
-        y = tn.read_until('qt'.encode('ascii')).decode('ascii').split()[-1][0]
-        if (y != qt and int(y) == 0) or int(qt) == 0:
-            print(y, qt, 'try again!')
-            qt = y
-            break
-        else:
-            tn.write('spellup\n'.encode('ascii'))
-            print('keep waiting', y, qt)
-        gquest_bool, gquest_value, wins = gquest(level, tn)
-        print(gquest_bool, gquest_value, wins)
-        if gquest_bool == 1 and gquest_value not in gquest_list and ((wins.isnumeric() and int(wins) > gquest_wins) or wins == 'All'):
-            gquest_list.append(gquest_value)
-            gq_webhoook = DiscordWebhook(url=url, content=f"GQuest {gquest_value} is available for your level!")
-            gq_webhoook.execute()
-        await asyncio.sleep(60)
-    tn.close()
-    webhook.execute()
+        time.sleep(1)
+        x = tn.read_until('qt'.encode('ascii')).decode('ascii').split()[-1][0]
+        qt = x[-1][0]  # x[3][0]
+        time.sleep(1)
+        level = get_level(tn)
+        gquest_wins = get_gqs_comp(tn)
+        gquest_list = []
+        while True:
+            tn.read_very_eager()
+            tn.write('\n'.encode('ascii'))
+            time.sleep(0.2)
+            y = tn.read_until('qt'.encode('ascii')).decode('ascii').split()[-1][0]
+            if (y != qt and int(y) == 0) or int(qt) == 0:
+                print(y, qt, 'try again!')
+                qt = y
+                break
+            else:
+                tn.write('spellup\n'.encode('ascii'))
+                print('keep waiting', y, qt)
+            gquest_bool, gquest_value, wins = gquest(level, tn)
+            print(gquest_bool, gquest_value, wins)
+            if gquest_bool == 1 and gquest_value not in gquest_list and ((wins.isnumeric() and int(wins) > gquest_wins) or wins == 'All'):
+                gquest_list.append(gquest_value)
+                gq_webhoook = DiscordWebhook(url=url, content=f"GQuest {gquest_value} is available for your level!")
+                gq_webhoook.execute()
+            await asyncio.sleep(60)
+        tn.close()
+        webhook.execute()
+    except:
+        running = False
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
+
+running = False
 
 @client.event
 async def on_ready():
@@ -112,9 +118,12 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    if message.channel.name == 'aardwolf-notifications' and message.author.name == 'floppybiscuits' and message.content.strip().upper() == 'QUEST':
+    global running
+    if not running and message.channel.name == 'aardwolf-notifications' and message.author.name == 'floppybiscuits' and message.content.strip().upper() == 'QUEST':
             await message.channel.send('Starting Quest Idling Script')
+            running = True
             await telnet_waiting()
+            running = False
 
 if __name__ == '__main__':
     client.run(api_key)
